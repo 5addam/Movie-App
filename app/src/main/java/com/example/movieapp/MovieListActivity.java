@@ -36,9 +36,14 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
         setContentView(R.layout.activity_main);
         btn = findViewById(R.id.btn_click);
 
+
         movieListViewModel = new ViewModelProvider(this).get(MovieListViewModel.class);
 
-//        btn.setOnClickListener(this);
+        //Calling the observers
+        ObserverChanges();
+
+        btn.setOnClickListener(this);
+
     }
 
     //Observing any data changes
@@ -47,6 +52,12 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void onChanged(List<MovieModel> movieModels) {
                 //Observing any data change
+                if(movieModels != null){
+                    for(MovieModel movie: movieModels){
+                        //getting the data
+                        Log.v("Tag","onChanged "+movie.getTitle());
+                    }
+                }
 
             }
         });
@@ -56,77 +67,82 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
     public void onClick(View v) {
         if (v.getId() == R.id.btn_click) {
 //            GetRetrofitMovieListResponse();
-            GetRetrofitMovieResponse();
+//            GetRetrofitMovieResponse();
+            searchMovieApi("Fast",1);
         }
 
     }
 
-    private void GetRetrofitMovieListResponse() {
-        MovieApi movieApi = Service.getMovieApi();
-
-        Call<MovieSearchResponse> responseCall = movieApi
-                .searchMovie(
-                        Credentials.API_KEY,
-                        "Action",
-                        "1"
-                );
-
-        responseCall.enqueue(new Callback<MovieSearchResponse>() {
-            @Override
-            public void onResponse(Call<MovieSearchResponse> call, Response<MovieSearchResponse> response) {
-                if (response.code() == 200) {
-                    Log.v("Tag", response.body().toString());
-
-                    List<MovieModel> movies = new ArrayList<>(response.body().getMovieModelList());
-
-                    for (MovieModel movie : movies) {
-                        Log.v("Tag",movie.getTitle());
-                    }
-                }
-                else {
-                    assert response.errorBody() != null;
-                    Log.v("Tag","Error "+response.errorBody().toString());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<MovieSearchResponse> call, Throwable t) {
-
-            }
-        });
+    //4 - Calling method in Main activity
+    private void searchMovieApi(String query, int pageNumber){
+        movieListViewModel.searchMovieApi(query,pageNumber);
     }
-
-    // Search with ID
-
-    private void GetRetrofitMovieResponse(){
-        MovieApi movieApi = Service.getMovieApi();
-        Call<MovieModel> responseCall =  movieApi
-                .getMovie(
-                        527774,
-                        Credentials.API_KEY
-                );
-
-        responseCall.enqueue(new Callback<MovieModel>() {
-            @Override
-            public void onResponse(Call<MovieModel> call, Response<MovieModel> response) {
-                if (response.code() == 200) {
-                    Log.v("Tag", response.body().toString());
-
-                    MovieModel movie = response.body();
-
-                    Log.v("Tag","Response:\n"+ "Title: "+movie.getTitle()+"\n"+movie.getOverview());
-
-                }
-                else {
-                    assert response.errorBody() != null;
-                    Log.v("Tag","Error "+response.errorBody().toString());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<MovieModel> call, Throwable t) {
-
-            }
-        });
-    }
+//
+//    private void GetRetrofitMovieListResponse() {
+//        MovieApi movieApi = Service.getMovieApi();
+//
+//        Call<MovieSearchResponse> responseCall = movieApi
+//                .searchMovie(
+//                        Credentials.API_KEY,
+//                        "Action",
+//                        1
+//                );
+//
+//        responseCall.enqueue(new Callback<MovieSearchResponse>() {
+//            @Override
+//            public void onResponse(Call<MovieSearchResponse> call, Response<MovieSearchResponse> response) {
+//                if (response.code() == 200) {
+//                    Log.v("Tag", response.body().toString());
+//
+//                    List<MovieModel> movies = new ArrayList<>(response.body().getMovieModelList());
+//
+//                    for (MovieModel movie : movies) {
+//                        Log.v("Tag",movie.getTitle());
+//                    }
+//                }
+//                else {
+//                    assert response.errorBody() != null;
+//                    Log.v("Tag","Error "+response.errorBody().toString());
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<MovieSearchResponse> call, Throwable t) {
+//
+//            }
+//        });
+//    }
+//
+//    // Search with ID
+//    private void GetRetrofitMovieResponse(){
+//        MovieApi movieApi = Service.getMovieApi();
+//        Call<MovieModel> responseCall =  movieApi
+//                .getMovie(
+//                        527774,
+//                        Credentials.API_KEY
+//                );
+//
+//        responseCall.enqueue(new Callback<MovieModel>() {
+//            @Override
+//            public void onResponse(Call<MovieModel> call, Response<MovieModel> response) {
+//                if (response.code() == 200) {
+//                    Log.v("Tag", response.body().toString());
+//
+//                    MovieModel movie = response.body();
+//
+//                    Log.v("Tag","Response:\n"+ "Title: "+movie.getTitle()+"\n"+movie.getOverview());
+//
+//                }
+//                else {
+//                    assert response.errorBody() != null;
+//                    Log.v("Tag","Error "+response.errorBody().toString());
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<MovieModel> call, Throwable t) {
+//
+//            }
+//        });
+//    }
 }

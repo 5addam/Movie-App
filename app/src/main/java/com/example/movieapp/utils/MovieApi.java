@@ -17,7 +17,7 @@ public interface MovieApi {
     Call<MovieSearchResponse> searchMovie(
             @Query("api_key") String key,
             @Query("query") String query,
-            @Query("page") String page
+            @Query("page") int page
     );
 
 
