@@ -1,15 +1,22 @@
 package com.example.movieapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.text.style.TtsSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
+import com.example.movieapp.adapters.MovieAdapter;
+import com.example.movieapp.adapters.OnMovieListener;
 import com.example.movieapp.models.MovieModel;
 import com.example.movieapp.request.Service;
 import com.example.movieapp.response.MovieSearchResponse;
@@ -24,9 +31,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MovieListActivity extends AppCompatActivity implements View.OnClickListener {
+public class MovieListActivity extends AppCompatActivity implements View.OnClickListener, OnMovieListener {
 
-    Button btn;
+
+    RecyclerView recyclerView;
+    MovieAdapter adapter;
+//    Button btn;
     //ViewModel
     private MovieListViewModel movieListViewModel;
 
@@ -34,15 +44,29 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        btn = findViewById(R.id.btn_click);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+//        btn = findViewById(R.id.btn_click);
+
+        //SearchView
+        setupSearchView();
+
+        recyclerView = findViewById(R.id.recycler_view);
 
 
         movieListViewModel = new ViewModelProvider(this).get(MovieListViewModel.class);
 
+        initRecyclerView();
+
         //Calling the observers
         ObserverChanges();
 
-        btn.setOnClickListener(this);
+        setupSearchView();
+
+//        searchMovieApi("fast",1);
+
+//        btn.setOnClickListener(this);
 
     }
 
@@ -57,6 +81,9 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
                         //getting the data
                         Log.v("Tag","onChanged "+movie.getTitle());
                     }
+
+                    adapter.setmMovies(movieModels);
+
                 }
 
             }
@@ -65,11 +92,11 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.btn_click) {
+//        if (v.getId() == R.id.btn_click) {
 //            GetRetrofitMovieListResponse();
 //            GetRetrofitMovieResponse();
-            searchMovieApi("Fast",1);
-        }
+//            searchMovieApi("Fast",2);
+//        }
 
     }
 
@@ -145,4 +172,45 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
 //            }
 //        });
 //    }
+
+    // 5 - initializing recyclerview & adding data to it
+    private void initRecyclerView(){
+        //Live data can't be passed via the constructor
+        adapter = new MovieAdapter(this);
+
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    }
+
+    @Override
+    public void onMovieClick(int position) {
+        Toast.makeText(this,"Click the Item no.: "+position,Toast.LENGTH_SHORT).show();
+
+    }
+
+    @Override
+    public void onCategoryClick(String category) {
+
+    }
+
+
+    //Getting data from searchView & query the api to get the results (Movies)
+    private void setupSearchView() {
+        final  SearchView searchView = findViewById(R.id.search_view);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                movieListViewModel.searchMovieApi(
+                        query,
+                        1);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
+    }
 }
