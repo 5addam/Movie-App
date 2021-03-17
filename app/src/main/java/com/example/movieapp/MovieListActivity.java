@@ -1,5 +1,6 @@
 package com.example.movieapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.style.TtsSpan;
 import android.util.Log;
@@ -40,6 +42,8 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
     //ViewModel
     private MovieListViewModel movieListViewModel;
 
+    boolean isPopular = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +72,30 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
 
 //        btn.setOnClickListener(this);
 
+        observePopularMovies();
+
+        // Getting the popular movies
+        movieListViewModel.searchPopularMovieApi(1);
+
+    }
+
+    private void observePopularMovies() {
+        movieListViewModel.getPopularMovies().observe(this, new Observer<List<MovieModel>>() {
+            @Override
+            public void onChanged(List<MovieModel> movieModels) {
+                //Observing any data change
+                if(movieModels != null){
+                    for(MovieModel movie: movieModels){
+                        //getting the data
+                        Log.v("Tag","onChanged "+movie.getTitle());
+                    }
+
+                    adapter.setmMovies(movieModels);
+
+                }
+
+            }
+        });
     }
 
     //Observing any data changes
@@ -179,12 +207,30 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
         adapter = new MovieAdapter(this);
 
         recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL,false));
+
+        //RecyclerView Pagination
+        // Loading next page of api response
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if(!recyclerView.canScrollHorizontally(1)){
+                    // Here we need to display the next results on the next page of api
+                    movieListViewModel.searchNextPage();
+                }
+            }
+        });
     }
+
 
     @Override
     public void onMovieClick(int position) {
         Toast.makeText(this,"Click the Item no.: "+position,Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(this, MovieDetail.class);
+        intent.putExtra("movie",adapter.getSelectedMovie(position));
+        startActivity(intent);
 
     }
 
@@ -209,6 +255,14 @@ public class MovieListActivity extends AppCompatActivity implements View.OnClick
             @Override
             public boolean onQueryTextChange(String newText) {
                 return false;
+            }
+        });
+
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isPopular = false;
             }
         });
 

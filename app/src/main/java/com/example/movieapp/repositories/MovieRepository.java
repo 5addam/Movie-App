@@ -15,23 +15,44 @@ public class MovieRepository {
 
     private MovieApiClient movieApiClient;
 
-    public static MovieRepository getInstance(){
-        if(instance == null)
+    private String mQuery;
+    private int mPageNumber;
+
+    public static MovieRepository getInstance() {
+        if (instance == null)
             instance = new MovieRepository();
 
         return instance;
     }
 
-    private MovieRepository(){
+    private MovieRepository() {
         movieApiClient = MovieApiClient.getInstance();
     }
 
-    public LiveData<List<MovieModel>> getMovies(){
+    public LiveData<List<MovieModel>> getMovies() {
         return movieApiClient.getMovies();
     }
 
     //2 - Calling the method in repository
-    public void searchMovieApi(String query, int pageNumber){
-        movieApiClient.searchMoviesApi(query,pageNumber);
+    public void searchMovieApi(String query, int pageNumber) {
+        mQuery = query;
+        mPageNumber = pageNumber;
+
+        movieApiClient.searchMoviesApi(query, pageNumber);
+    }
+
+    public void searchNextPage() {
+        searchMovieApi(mQuery, mPageNumber + 1);
+    }
+
+
+    public LiveData<List<MovieModel>> getPopularMovies() {
+        return movieApiClient.getPopularMovies();
+    }
+
+    public void searchPopularMovie(int pageNumber) {
+        mPageNumber = pageNumber;
+
+        movieApiClient.searchPopularMoviesApi(pageNumber);
     }
 }

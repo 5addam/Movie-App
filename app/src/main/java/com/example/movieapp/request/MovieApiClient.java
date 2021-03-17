@@ -21,13 +21,19 @@ import retrofit2.Response;
 
 public class MovieApiClient {
 
-    //This is LiveData
+    //This is LiveData for search
     private MutableLiveData<List<MovieModel>> mutableLiveData;
 
     private static MovieApiClient instance;
 
     //making global runnable request
     private RetrieveMoviesRunnable moviesRunnable;
+
+    // LiveData for popular movies
+    private MutableLiveData<List<MovieModel>> mutableLiveDataPopular;
+
+    // making popular runnable
+    private RetrievePopularMoviesRunnable moviesRunnablePopular;
 
     public static MovieApiClient getInstance() {
         if (instance == null)
@@ -37,10 +43,15 @@ public class MovieApiClient {
 
     private MovieApiClient() {
         mutableLiveData = new MutableLiveData<>();
+        mutableLiveDataPopular = new MutableLiveData<>();
     }
 
     public LiveData<List<MovieModel>> getMovies() {
         return mutableLiveData;
+    }
+
+    public LiveData<List<MovieModel>> getPopularMovies() {
+        return mutableLiveDataPopular;
     }
 
     //1 - This method will be used to call through the classes
@@ -51,6 +62,26 @@ public class MovieApiClient {
 
         moviesRunnable = new RetrieveMoviesRunnable(query,pageNumber);
         final Future myHandler = AppExecutors.getInstance().networkIO().submit(moviesRunnable);
+
+        AppExecutors.getInstance().networkIO().schedule(new Runnable() {
+            @Override
+            public void run() {
+                ///canceling the retrofit call
+                myHandler.cancel(true);
+            }
+        }, 3000, TimeUnit.MILLISECONDS);
+
+    }
+
+
+    //1 - This method will be used to call through the classes
+    public void searchPopularMoviesApi(int pageNumber) {
+
+        if(moviesRunnablePopular != null)
+            moviesRunnablePopular = null;
+
+        moviesRunnablePopular = new RetrievePopularMoviesRunnable(pageNumber);
+        final Future myHandler = AppExecutors.getInstance().networkIO().submit(moviesRunnablePopular);
 
         AppExecutors.getInstance().networkIO().schedule(new Runnable() {
             @Override
@@ -118,6 +149,67 @@ public class MovieApiClient {
             return Service.getMovieApi().searchMovie(
                     Credentials.API_KEY,
                     query,
+                    pageNumber
+            );
+        }
+
+        private void cancelRequest() {
+            Log.v("Tag", "Canceling Search Req");
+            cancelRequest = true;
+        }
+    }
+
+
+    private class RetrievePopularMoviesRunnable implements Runnable {
+
+        private int pageNumber;
+        boolean cancelRequest;
+
+        public RetrievePopularMoviesRunnable(int pageNumber) {
+            this.pageNumber = pageNumber;
+            cancelRequest = false;
+        }
+
+        @Override
+        public void run() {
+
+            // getting the response object
+            try {
+                Response response = getPopularMovies(pageNumber).execute();
+                if (cancelRequest)
+                    return;
+                if(response.code() == 200){
+                    List<MovieModel> list = new ArrayList<>(((MovieSearchResponse)response.body()).getMovieModelList());
+                    if(pageNumber == 1){
+                        //sending data to live data
+                        //PostData: used for background thread
+                        //setValue: not for background thrad
+                        mutableLiveDataPopular.postValue(list);
+                    }
+                    else {
+                        List<MovieModel> currentMovies = mutableLiveDataPopular.getValue();
+                        currentMovies.addAll(list);
+                        mutableLiveDataPopular.postValue(currentMovies);
+                    }
+                }
+                else {
+                    String error = response.errorBody().string();
+                    Log.v("Tag","Error: "+error);
+                    mutableLiveDataPopular.postValue(null);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                mutableLiveDataPopular.postValue(null);
+            }
+            if (cancelRequest)
+                return;
+
+            // Search Method/query
+        }
+
+        private Call<MovieSearchResponse> getPopularMovies(int pageNumber) {
+            return Service.getMovieApi().getPopularMovies(
+                    Credentials.API_KEY,
                     pageNumber
             );
         }
